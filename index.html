@@ -85,7 +85,7 @@ if (!dealID || dealID === "no_deal") {
             .then(response => response.json())
             .then(data => {
                 console.log('Data successfully sent to Adalo:', data);
-                window.location.href = "adalo://<APP_ID>/Admin-Dashboard";
+                window.location.href = "adalo://43d1d797-8556-45d9-9cc4-a964777c052c/Admin-Dashboard";
             })
             .catch(error => {
                 console.error('Error sending data to Adalo:', error);  // Handle any errors
