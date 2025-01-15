@@ -9,54 +9,70 @@
     <video id="video" width="300" height="200" autoplay></video>
     <p id="output"></p>
     <script>
-        // Start the camera and QR code scanner
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
-            const video = document.getElementById("video");
+        // Get the logged-in user's ID and the current deal ID from Adalo's passed URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const userID = urlParams.get('userID'); // Assume Adalo passes this dynamically
+        const dealID = urlParams.get('dealID'); // Assume Adalo passes this dynamically
+
+        // If userID or dealID are not available, use fallback options (local storage or prompt)
+        if (!userID) {
+            alert('User ID is not available');
+            return;
+        }
+        if (!dealID) {
+            alert('Deal ID is not available');
+            return;
+        }
+
+        // Access the camera and start video feed for QR code scanning
+        navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+            const video = document.getElementById('video');
             video.srcObject = stream;
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
 
-            const canvas = document.createElement("canvas");
-            const context = canvas.getContext("2d");
-
-            video.addEventListener("play", () => {
+            video.addEventListener('play', () => {
                 setInterval(() => {
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
                     context.drawImage(video, 0, 0, canvas.width, canvas.height);
                     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
                     const code = jsQR(imageData.data, imageData.width, imageData.height);
-
                     if (code) {
-                        const scannedData = code.data;
-                        document.getElementById("output").innerText = `Scanned: ${scannedData}`;
-                        
-                        // Send the scanned data to Adalo
-                        sendToAdalo(scannedData);
+                        const qrCodeValue = code.data;
+                        document.getElementById('output').innerText = qrCodeValue;
+                        sendToAdalo(qrCodeValue); // Send the QR code data to Adalo
                     }
-                }, 100);
+                }, 100); // Scan every 100ms
             });
+        }).catch(error => {
+            console.error('Error accessing camera:', error);
         });
 
-        // Function to send scanned QR code data to Adalo
-        function sendToAdalo(data) {
-            fetch("https://api.adalo.com/v0/apps/<APP_ID>/collections/<COLLECTION_ID>", {
-                method: "POST",
+        // Function to send QR code data to Adalo
+        function sendToAdalo(qrCodeValue) {
+            // API URL to send data to Adalo (replace with your actual Adalo app details)
+            const apiUrl = 'https://api.adalo.com/v0/apps/43d1d797-8556-45d9-9cc4-a964777c052c/collections/t_0gp13b7mlbmxvftnqazbxqjl3';
+
+            // Sending the data (QR code, user ID, and deal ID) via POST request to Adalo
+            fetch(apiUrl, {
+                method: 'POST',
                 headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer <YOUR_API_KEY>"
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer c15a8b62-e444-442e-ae0b-b91f2a009d59 '  // Replace with your actual API key
                 },
                 body: JSON.stringify({
-                    "field_name": data // Replace 'field_name' with your Adalo collection's field key
+                    qr_code_data: qrCodeValue,  // Send the QR code value
+                    user: userID,               // Send the logged-in user ID
+                    deal: dealID                // Send the current deal ID
                 })
             })
-            .then(response => {
-                if (response.ok) {
-                    console.log("Data successfully sent to Adalo");
-                } else {
-                    console.error("Failed to send data to Adalo");
-                }
+            .then(response => response.json())
+            .then(data => {
+                console.log('Data successfully sent to Adalo:', data);
             })
             .catch(error => {
-                console.error("Error sending data to Adalo:", error);
+                console.error('Error sending data to Adalo:', error);  // Handle any errors
             });
         }
     </script>
