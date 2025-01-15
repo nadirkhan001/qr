@@ -3,13 +3,42 @@
 <head>
     <title>QR Code Scanner</title>
     <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f8f9fa;
+        }
+        video {
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            max-width: 100%;
+            width: 300px;
+            height: auto;
+        }
+        h1 {
+            font-size: 18px;
+            color: #333;
+        }
+        #output {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #4caf50;
+        }
+    </style>
 </head>
 <body>
     <h1>Scan QR Code</h1>
-    <video id="video" width="300" height="200" autoplay></video>
-    <p id="output"></p>
+    <video id="video" autoplay playsinline></video>
+    <p id="output">Scanning...</p>
     <script>
-        navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+        navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } } // Back camera
+        }).then(stream => {
             const video = document.getElementById('video');
             video.srcObject = stream;
             const canvas = document.createElement('canvas');
@@ -24,10 +53,32 @@
                     const code = jsQR(imageData.data, imageData.width, imageData.height);
                     if (code) {
                         document.getElementById('output').innerText = code.data;
+                        sendToAdalo(code.data); // Send scanned data to Adalo
                     }
-                }, 100);
+                }, 500);
             });
         });
+
+        function sendToAdalo(scannedData) {
+            // Use a POST request to send data to Adalo
+            fetch('https://your-adalo-app-api-endpoint.com/collection-name', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer YOUR_ADALO_API_KEY' // Replace with your API key
+                },
+                body: JSON.stringify({
+                    scannedCode: scannedData, // Change "scannedCode" to your collection field name
+                    scannedAt: new Date().toISOString() // Optional: Add timestamp
+                })
+            }).then(response => {
+                if (response.ok) {
+                    alert('QR Code scanned and stored successfully!');
+                } else {
+                    alert('Failed to store scanned data.');
+                }
+            }).catch(error => console.error('Error:', error));
+        }
     </script>
 </body>
 </html>
