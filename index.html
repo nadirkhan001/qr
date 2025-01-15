@@ -3,71 +3,87 @@
 <head>
     <title>QR Code Scanner</title>
     <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.min.js"></script>
-    <style>
-        /* Mobile-friendly styling */
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-        }
-        video {
-            width: 90%;
-            max-width: 400px;
-            border: 2px solid #ccc;
-            border-radius: 10px;
-            background: black;
-        }
-        p {
-            margin-top: 15px;
-            color: #555;
-        }
-    </style>
 </head>
 <body>
     <h1>Scan QR Code</h1>
-    <video id="video" autoplay></video>
-    <p id="output">Initializing camera...</p>
-
+    <!-- This will show the live video feed from the camera -->
+    <video id="video" width="300" height="200" autoplay></video>
+    <p id="output"></p>  <!-- Output where the QR code data will be shown -->
     <script>
-        console.log('Starting QR scanner...');
+        // Start the camera (back camera)
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-            .then(stream => {
-                console.log('Camera access granted');
-                const video = document.getElementById('video');
-                video.srcObject = stream;
+        .then(stream => {
+            const video = document.getElementById('video');
+            video.srcObject = stream;
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
 
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
+            video.addEventListener('play', () => {
+                setInterval(() => {
+                    // Capture the video frame
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    
+                    // Scan the frame for QR codes
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    
+                    // If a QR code is found
+                    if (code) {
+                        const qrCodeValue = code.data; // This is the data of the QR code
 
-                video.addEventListener('play', () => {
-                    console.log('Video playing, starting QR scan...');
-                    setInterval(() => {
-                        if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                            canvas.width = video.videoWidth;
-                            canvas.height = video.videoHeight;
-                            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        // Display the QR code data in the output element (for testing/debugging)
+                        document.getElementById('output').innerText = qrCodeValue;
 
-                            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                            const code = jsQR(imageData.data, imageData.width, imageData.height);
-                            if (code) {
-                                console.log('QR Code Detected:', code.data);
-                                document.getElementById('output').innerText = `QR Code: ${code.data}`
-                                window.location.href = `adalo://43d1d797-8556-45d9-9cc4-a964777c052c/Admin-Dashboard`;
-                                ;
-                            }
-                        }
-                    }, 100);
-                });
+                        // Send the scanned QR code data to Adalo
+                        sendToAdalo(qrCodeValue); // Call the function to send data to Adalo
+                    }
+                }, 100);
+            });
+        })
+        .catch(error => {
+            console.error('Error accessing camera:', error);
+            alert('Unable to access the camera. Please check your browser settings and permissions.');
+        });
+
+        // Function to send the QR code data to Adalo's API
+        function sendToAdalo(qrCodeValue) {
+            // Get the logged-in user's ID and the current deal ID from Adalo's passed URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const userID = urlParams.get('userID'); // Assume Adalo passes this dynamically
+            const dealID = urlParams.get('dealID'); // Assume Adalo passes this dynamically
+
+            if (!userID || !dealID) {
+                alert('User ID or Deal ID is missing.');
+                return;
+            }
+
+            // API URL to send data to Adalo (replace with your actual Adalo app details)
+            const apiUrl = 'https://api.adalo.com/v0/apps/43d1d797-8556-45d9-9cc4-a964777c052c/collections/Redemptions';
+
+            // Sending the data (QR code, user ID, and deal ID) via POST request to Adalo
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer 7yu4q6tbwmeir04zpof9wntw5'  // Replace with your actual API key
+                },
+                body: JSON.stringify({
+                    qr_code_data: qrCodeValue,  // Send the QR code value
+                    user: userID,               // Send the logged-in user ID
+                    deal: dealID                // Send the current deal ID
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Data successfully sent to Adalo:', data);
+                window.location.href = "adalo://<APP_ID>/Admin-Dashboard";
             })
             .catch(error => {
-                console.error('Error accessing camera:', error);
-                document.getElementById('output').innerText = 'Camera access denied or unavailable.';
+                console.error('Error sending data to Adalo:', error);  // Handle any errors
             });
+        }
     </script>
 </body>
 </html>
