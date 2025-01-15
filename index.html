@@ -56,7 +56,9 @@
                             const code = jsQR(imageData.data, imageData.width, imageData.height);
                             if (code) {
                                 console.log('QR Code Detected:', code.data);
-                                document.getElementById('output').innerText = `QR Code: ${code.data}`;
+                                document.getElementById('output').innerText = `QR Code: ${code.data}`
+                                window.location.href = `https://your-adalo-app-link.com/Admin-Dashboard`;
+                                ;
                             }
                         }
                     }, 100);
