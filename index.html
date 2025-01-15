@@ -19,4 +19,46 @@
 
             video.addEventListener("play", () => {
                 setInterval(() => {
-                    canvas.widt
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                    if (code) {
+                        const scannedData = code.data;
+                        document.getElementById("output").innerText = `Scanned: ${scannedData}`;
+                        
+                        // Send the scanned data to Adalo
+                        sendToAdalo(scannedData);
+                    }
+                }, 100);
+            });
+        });
+
+        // Function to send scanned QR code data to Adalo
+        function sendToAdalo(data) {
+            fetch("https://api.adalo.com/v0/apps/<APP_ID>/collections/<COLLECTION_ID>", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer <YOUR_API_KEY>"
+                },
+                body: JSON.stringify({
+                    "field_name": data // Replace 'field_name' with your Adalo collection's field key
+                })
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log("Data successfully sent to Adalo");
+                } else {
+                    console.error("Failed to send data to Adalo");
+                }
+            })
+            .catch(error => {
+                console.error("Error sending data to Adalo:", error);
+            });
+        }
+    </script>
+</body>
+</html>
