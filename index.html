@@ -50,15 +50,22 @@
         // Function to send the QR code data to Adalo's API
         function sendToAdalo(qrCodeValue) {
             // Get the logged-in user's ID and the current deal ID from Adalo's passed URL parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const userID = urlParams.get('userID'); // Assume Adalo passes this dynamically
-            const dealID = urlParams.get('dealID'); // Assume Adalo passes this dynamically
+const urlParams = new URLSearchParams(window.location.search);
+const userID = urlParams.get('userID');
+const dealID = urlParams.get('dealID');
 
-            if (!userID || !dealID) {
-                alert('User ID or Deal ID is missing.');
-                return;
-            }
+// If dealID is missing or is "no_deal", handle it accordingly
+if (!userID) {
+    alert('User ID is missing.');
+    return;
+}
 
+if (!dealID || dealID === "no_deal") {
+    console.log("No deal ID provided, handling accordingly...");
+    // You can either skip the deal logic or handle it in some way
+} else {
+    console.log("Deal ID: ", dealID);
+}
             // API URL to send data to Adalo (replace with your actual Adalo app details)
             const apiUrl = 'https://api.adalo.com/v0/apps/43d1d797-8556-45d9-9cc4-a964777c052c/collections/Redemptions';
 
