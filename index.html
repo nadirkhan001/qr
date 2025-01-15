@@ -3,11 +3,43 @@
 <head>
     <title>QR Code Scanner</title>
     <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.min.js"></script>
+    <style>
+        /* General styling for mobile view */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            font-size: 1.5rem;
+            color: #333;
+            margin: 10px 0;
+        }
+        video {
+            display: block;
+            margin: 10px auto;
+            width: 90%;
+            max-width: 400px;
+            height: auto;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            background-color: #000;
+        }
+        p {
+            font-size: 1rem;
+            color: #555;
+            margin: 10px 20px;
+            word-wrap: break-word;
+        }
+    </style>
 </head>
 <body>
     <h1>Scan QR Code</h1>
-    <video id="video" width="300" height="200" autoplay></video>
-    <p id="output"></p>
+    <video id="video" autoplay></video>
+    <p id="output">Waiting for QR code...</p>
+
     <script>
         // Get the logged-in user's ID and the current deal ID from Adalo's passed URL parameters
         const urlParams = new URLSearchParams(window.location.search);
@@ -25,28 +57,38 @@
         }
 
         // Access the camera and start video feed for QR code scanning
-        navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
             const video = document.getElementById('video');
             video.srcObject = stream;
+
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
 
             video.addEventListener('play', () => {
-                setInterval(() => {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                    const code = jsQR(imageData.data, imageData.width, imageData.height);
-                    if (code) {
-                        const qrCodeValue = code.data;
-                        document.getElementById('output').innerText = qrCodeValue;
-                        sendToAdalo(qrCodeValue); // Send the QR code data to Adalo
+                const scanInterval = setInterval(() => {
+                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                        const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                        if (code) {
+                            const qrCodeValue = code.data;
+                            document.getElementById('output').innerText = `QR Code: ${qrCodeValue}`;
+                            console.log('QR Code Detected:', qrCodeValue);
+
+                            // Stop scanning once QR code is detected
+                            clearInterval(scanInterval);
+                            sendToAdalo(qrCodeValue);
+                        }
                     }
                 }, 100); // Scan every 100ms
             });
         }).catch(error => {
             console.error('Error accessing camera:', error);
+            document.getElementById('output').innerText = 'Error accessing the camera.';
         });
 
         // Function to send QR code data to Adalo
@@ -59,7 +101,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer c15a8b62-e444-442e-ae0b-b91f2a009d59 '  // Replace with your actual API key
+                    'Authorization': 'Bearer c15a8b62-e444-442e-ae0b-b91f2a009d59' // Replace with your actual API key
                 },
                 body: JSON.stringify({
                     qr_code_data: qrCodeValue,  // Send the QR code value
