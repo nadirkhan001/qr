@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QR Code Scanner</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.min.js"></script>
+</head>
+<body>
+    <h1>Scan QR Code</h1>
+    <video id="video" width="300" height="200" autoplay></video>
+    <p id="output"></p>
+    <script>
+        navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+            const video = document.getElementById('video');
+            video.srcObject = stream;
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            video.addEventListener('play', () => {
+                setInterval(() => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    if (code) {
+                        document.getElementById('output').innerText = code.data;
+                    }
+                }, 100);
+            });
+        });
+    </script>
+</body>
+</html>
