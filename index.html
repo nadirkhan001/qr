@@ -1,16 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>QR Code Scanner</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin QR Code Scanner</title>
     <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.min.js"></script>
 </head>
 <body>
-    <h1>Scan QR Code</h1>
-    <!-- This will show the live video feed from the camera -->
+    <h1>Admin QR Code Scanner</h1>
     <video id="video" width="300" height="200" autoplay></video>
-    <p id="output"></p>  <!-- Output where the QR code data will be shown -->
+    <p id="output"></p>  <!-- To show the QR code output -->
+
     <script>
-        // Start the camera (back camera)
+        // Start the camera feed
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
         .then(stream => {
             const video = document.getElementById('video');
@@ -25,70 +27,89 @@
                     canvas.height = video.videoHeight;
                     context.drawImage(video, 0, 0, canvas.width, canvas.height);
                     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                    
+
                     // Scan the frame for QR codes
                     const code = jsQR(imageData.data, imageData.width, imageData.height);
-                    
-                    // If a QR code is found
+
                     if (code) {
-                        const qrCodeValue = code.data; // This is the data of the QR code
+                        const scannedCode = code.data; // This is the scanned QR code value
 
-                        // Display the QR code data in the output element (for testing/debugging)
-                        document.getElementById('output').innerText = qrCodeValue;
+                        // Display scanned QR code in the output
+                        document.getElementById('output').innerText = scannedCode;
 
-                        // Send the scanned QR code data to Adalo
-                        sendToAdalo(qrCodeValue); // Call the function to send data to Adalo
+                        // Call function to validate the scanned QR code with Adalo
+                        validateQRCode(scannedCode);
                     }
-                }, 100);
+                }, 500);
             });
         })
         .catch(error => {
             console.error('Error accessing camera:', error);
-            alert('Unable to access the camera. Please check your browser settings and permissions.');
+            alert('Unable to access the camera. Please check your browser permissions.');
         });
 
-        // Function to send the QR code data to Adalo's API
-        function sendToAdalo(qrCodeValue) {
-            // Get the logged-in user's ID and the current deal ID from Adalo's passed URL parameters
-const urlParams = new URLSearchParams(window.location.search);
-const userID = urlParams.get('userID');
-const dealID = urlParams.get('dealID');
+        // Function to validate QR code against Adalo API
+        function validateQRCode(scannedCode) {
+            // Adalo API endpoint for Redemptions collection
+            const apiUrl = 'https://api.adalo.com/v0/apps/{your-app-id}/collections/Redemptions';
 
-// If dealID is missing or is "no_deal", handle it accordingly
-if (!userID) {
-    alert('User ID is missing.');
-    return;
-}
-
-if (!dealID || dealID === "no_deal") {
-    console.log("No deal ID provided, handling accordingly...");
-    // You can either skip the deal logic or handle it in some way
-} else {
-    console.log("Deal ID: ", dealID);
-}
-            // API URL to send data to Adalo (replace with your actual Adalo app details)
-            const apiUrl = 'https://api.adalo.com/v0/apps/43d1d797-8556-45d9-9cc4-a964777c052c/collections/Redemptions';
-
-            // Sending the data (QR code, user ID, and deal ID) via POST request to Adalo
+            // Fetch all Redemptions to check the unique code
             fetch(apiUrl, {
-                method: 'POST',
+                method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer 7yu4q6tbwmeir04zpof9wntw5'  // Replace with your actual API key
+                    'Authorization': 'Bearer {your-api-key}' // Replace with your actual API key
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Check if the scanned code matches any unique code in Redemptions
+                const redemption = data.records.find(record => record.unique_code === scannedCode);
+
+                if (redemption) {
+                    // If the code matches, update the 'qr_stopped' property to true
+                    updateQRCodeStatus(redemption.id, true);
+                } else {
+                    // If the code does not match, set 'qr_stopped' to false
+                    updateQRCodeStatus(null, false);
+                }
+            })
+            .catch(error => {
+                console.error('Error validating QR code:', error);
+            });
+        }
+
+        // Function to update the QR code status in Adalo
+        function updateQRCodeStatus(recordId, qrStopped) {
+            if (!recordId) {
+                alert('Invalid QR code!'); // Notify admin that the QR code is invalid
+                return;
+            }
+
+            // Adalo API endpoint to update the specific Redemption record
+            const updateUrl = `https://api.adalo.com/v0/apps/{your-app-id}/collections/Redemptions/${recordId}`;
+
+            // Update the Redemption record with new qr_stopped value
+            fetch(updateUrl, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': 'Bearer {your-api-key}', // Replace with your actual API key
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    qr_code_data: qrCodeValue,  // Send the QR code value
-                    user: userID,               // Send the logged-in user ID
-                    deal: dealID                // Send the current deal ID
+                    qr_stopped: qrStopped
                 })
             })
             .then(response => response.json())
             .then(data => {
-                console.log('Data successfully sent to Adalo:', data);
-                window.location.href = "adalo://43d1d797-8556-45d9-9cc4-a964777c052c/Admin-Dashboard";
+                console.log('QR Code status updated successfully:', data);
+
+                // Redirect admin to another screen if QR code is valid
+                if (qrStopped) {
+                    window.location.href = 'adalo://your-admin-screen-deeplink';
+                }
             })
             .catch(error => {
-                console.error('Error sending data to Adalo:', error);  // Handle any errors
+                console.error('Error updating QR code status:', error);
             });
         }
     </script>
