@@ -60,6 +60,9 @@
                     'Authorization': 'Bearer 15wf61bh2xgzpd16c2wy2srm4' // Replace with your actual API key
                 }
             })
+            body: JSON.stringify({
+                    "Unique Code": unique_code
+                })
             .then(response => response.json())
             .then(data => {
                 // Check if the scanned code matches any unique code in Redemptions
@@ -96,7 +99,7 @@
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    qr_stopped: qrStopped
+                    "QR Stopped": qrStopped
                 })
             })
             .then(response => response.json())
