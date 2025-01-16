@@ -60,13 +60,11 @@
                     'Authorization': 'Bearer 15wf61bh2xgzpd16c2wy2srm4' // Replace with your actual API key
                 }
             })
-            body: JSON.stringify({
-                    "Unique Code": unique_code
-                })
+            
             .then(response => response.json())
             .then(data => {
                 // Check if the scanned code matches any unique code in Redemptions
-                const redemption = data.records.find(record => record.unique_code === scannedCode);
+                const redemption = data.records.find(record => record["Unique Code"] === scannedCode);
 
                 if (redemption) {
                     // If the code matches, update the 'qr_stopped' property to true
