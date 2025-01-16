@@ -51,7 +51,7 @@
         // Function to validate QR code against Adalo API
         function validateQRCode(scannedCode) {
             // Adalo API endpoint for Redemptions collection
-            const apiUrl = 'https://api.adalo.com/v0/apps/43d1d797-8556-45d9-9cc4-a964777c052c/collections/Redemptions';
+            const apiUrl = 'https://api.adalo.com/v0/apps/43d1d797-8556-45d9-9cc4-a964777c052c/collections/t_0gp13b7mlbmxvftnqazbxqjl3';
 
             // Fetch all Redemptions to check the unique code
             fetch(apiUrl, {
@@ -86,7 +86,7 @@
             }
 
             // Adalo API endpoint to update the specific Redemption record
-            const updateUrl = `https://api.adalo.com/v0/apps/43d1d797-8556-45d9-9cc4-a964777c052c/collections/Redemptions/${recordId}`;
+            const updateUrl = `https://api.adalo.com/v0/apps/43d1d797-8556-45d9-9cc4-a964777c052c/collections/t_0gp13b7mlbmxvftnqazbxqjl3/${recordId}`;
 
             // Update the Redemption record with new qr_stopped value
             fetch(updateUrl, {
