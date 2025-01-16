@@ -14,116 +14,132 @@
     <script>
         // Start the camera feed
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-        .then(stream => {
-            const video = document.getElementById('video');
-            video.srcObject = stream;
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-
-            video.addEventListener('play', () => {
-                setInterval(() => {
-                    // Capture the video frame
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-
-                    // Scan the frame for QR codes
-                    const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-                    if (code) {
-                        const scannedCode = code.data; // This is the scanned QR code value
-
-                        // Display scanned QR code in the output
-                        document.getElementById('output').innerText = scannedCode;
-
-                        // Call function to validate the scanned QR code with Adalo
-                        validateQRCode(scannedCode);
-                    }
-                }, 500);
+            .then((stream) => {
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+    
+                video.addEventListener('play', () => {
+                    setInterval(() => {
+                        // Capture the video frame
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    
+                        // Scan the frame for QR codes
+                        const code = jsQR(imageData.data, imageData.width, imageData.height);
+    
+                        if (code) {
+                            const scannedCode = code.data.trim().toLowerCase(); // Clean scanned code
+                            console.log('Scanned Code:', scannedCode);
+    
+                            // Display scanned QR code in the output
+                            document.getElementById('output').innerText = scannedCode;
+    
+                            // Call function to validate the scanned QR code with Adalo
+                            validateQRCode(scannedCode);
+                        }
+                    }, 500); // Scan every 500ms
+                });
+            })
+            .catch((error) => {
+                console.error('Error accessing camera:', error.message);
+                alert('Unable to access the camera. Please check your browser permissions.');
             });
-        })
-        .catch(error => {
-            console.error('Error accessing camera:', error);
-            alert('Unable to access the camera. Please check your browser permissions.');
-        });
-
+    
         // Function to validate QR code against Adalo API
         function validateQRCode(scannedCode) {
-            // Adalo API endpoint for Redemptions collection
             const apiUrl = 'https://api.adalo.com/v0/apps/43d1d797-8556-45d9-9cc4-a964777c052c/collections/t_0gp13b7mlbmxvftnqazbxqjl3';
-
+    
             // Fetch all Redemptions to check the unique code
             fetch(apiUrl, {
                 method: 'GET',
                 headers: {
-                    'Authorization': 'Bearer 15wf61bh2xgzpd16c2wy2srm4' // Replace with your actual API key
-                }
+                    'Authorization': 'Bearer 15wf61bh2xgzpd16c2wy2srm4',
+                },
             })
-            .then(response => response.json())
-.then(data => {
-    console.log('Adalo Data:', data);  // Log the data to inspect its structure
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error(`Error fetching data: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    if (!data.records || !Array.isArray(data.records)) {
+                        throw new Error("Invalid data structure received from Adalo API");
+                    }
+                    console.log("Adalo Data:", data.records);
     
-    const redemption = data.records.find(record => record["Unique Code"] === scannedCode);
-    console.log('Scanned Code:', scannedCode);
+                    // Find matching record
+                    const redemption = data.records.find((record) => {
+                        const adaloCode = record["Unique Code"];
+                        if (!adaloCode) {
+                            console.warn("Missing Unique Code in record:", record);
+                            return false; // Skip this record
+                        }
+                        const cleanedAdaloCode = adaloCode.trim().toLowerCase();
+                        return scannedCode === cleanedAdaloCode;
+                    });
     
-    if (redemption) {
-        // Code found, update qr_stopped to true
-        updateQRCodeStatus(redemption.id, true);
-    } else {
-        // No code found, set qr_stopped to false
-        updateQRCodeStatus(null, false);
-    }
-})
-
-            
-.then(response => response.json())
-.then(data => {
-    console.log('Adalo Data:', data);  // Log the API response to inspect the structure
-
-    // Clean the scanned code and Adalo unique code for accurate comparison
-    const cleanedScannedCode = scannedCode.trim().toLowerCase();  // Clean and make lowercase
-    const redemption = data.records.find(record => {
-        const cleanedAdaloCode = record["Unique Code"].trim().toLowerCase();  // Clean and make lowercase
-        console.log('Comparing:', cleanedScannedCode, cleanedAdaloCode);
-        return cleanedScannedCode === cleanedAdaloCode;  // Check if the codes match
-    });
-
-    if (redemption) {
-        console.log('Code Found:', redemption);  // Log the found redemption record
-        // If the code matches, update the 'qr_stopped' property to true
-        updateQRCodeStatus(redemption.id, true);
-    } else {
-        console.log('No matching code found');
-        // If the code does not match, set 'qr_stopped' to false
-        updateQRCodeStatus(null, false);
-    }
-})
-.catch(error => {
-    console.error('Error fetching data:', error);
-});
-
-// Function to update qr_stopped property
-function updateQRCodeStatus(recordId, status) {
-    const apiUrl = `https://api.adalo.com/v0/apps/43d1d797-8556-45d9-9cc4-a964777c052c/collections/t_0gp13b7mlbmxvftnqazbxqjl3/${recordId}`;
-    fetch(apiUrl, {
-        method: 'PATCH', // 'PATCH' to update the record
-        headers: {
-            'Authorization': 'Bearer 15wf61bh2xgzpd16c2wy2srm4',
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            "qr_stopped": status // Update qr_stopped property
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Update successful:', data);
-    })
-    .catch(error => {
-        console.error('Error updating QR status:', error);
-    });
-}}
+                    if (redemption) {
+                        console.log("Matching Record Found:", redemption);
+                        updateQRCodeStatus(redemption.id, true) ;
+                    } else {
+                        console.log("No matching code found");
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error fetching data:', error.message);
+                });
+        }
+    
+        // Function to update the QR code status (treated as boolean)
+        function updateQRCodeStatus(recordId, status) {
+            if (!recordId) {
+                console.error('Invalid record ID. Cannot update QR code status.');
+                return;
+            }
+    
+            console.log("Attempting to update record with ID:", recordId); // Debugging record ID
+    
+            const apiUrl = `https://api.adalo.com/v0/apps/43d1d797-8556-45d9-9cc4-a964777c052c/collections/t_0gp13b7mlbmxvftnqazbxqjl3/${recordId}`;
+    
+            fetch(apiUrl, {
+                method: 'PUT', // Changed to PATCH for partial updates
+                headers: {
+                    'Authorization': 'Bearer 15wf61bh2xgzpd16c2wy2srm4',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    "QR Stopped": Boolean(status), // Explicitly cast status as boolean
+                }),
+            })
+                .then((response) => {
+                    
+                    if (!response.ok) {
+                        throw new Error(`Error updating data: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    console.log('QR Code Status Updated:', data);
+                })
+                
+                .catch((error) => {
+                    console.error('Error updating QR code status:', error.message);
+                });
+                
+        }
     </script>
+    
+    
+    
+    
+    <video id="video" autoplay></video>
+    <div id="output"></div>
+    
+    
 </body>
 </html>
