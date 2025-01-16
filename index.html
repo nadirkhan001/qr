@@ -86,13 +86,13 @@
             }
 
             // Adalo API endpoint to update the specific Redemption record
-            const updateUrl = `https://api.adalo.com/v0/apps/{your-app-id}/collections/Redemptions/${recordId}`;
+            const updateUrl = `https://api.adalo.com/v0/apps/43d1d797-8556-45d9-9cc4-a964777c052c/collections/Redemptions/${recordId}`;
 
             // Update the Redemption record with new qr_stopped value
             fetch(updateUrl, {
                 method: 'PATCH',
                 headers: {
-                    'Authorization': 'Bearer {your-api-key}', // Replace with your actual API key
+                    'Authorization': 'Bearer 7yu4q6tbwmeir04zpof9wntw5', // Replace with your actual API key
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
