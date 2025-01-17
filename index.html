@@ -1,158 +1,134 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin QR Code Scanner</title>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.min.js"></script>
-</head>
-<body>
-    <h1>Admin QR Code Scanner</h1>
-    <video id="video" width="300" height="200" autoplay></video>
-    <p id="output"></p>  <!-- To show the QR code output -->
+<script>
+    // Start the camera feed
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then((stream) => {
+            const video = document.getElementById('video');
+            video.srcObject = stream;
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
 
-    <script>
-        // Start the camera feed
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-            .then((stream) => {
-                const video = document.getElementById('video');
-                video.srcObject = stream;
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-    
-                video.addEventListener('play', () => {
-                    setInterval(() => {
-                        // Capture the video frame
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
-                        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-    
-                        // Scan the frame for QR codes
-                        const code = jsQR(imageData.data, imageData.width, imageData.height);
-    
-                        if (code) {
-                            const scannedCode = code.data.trim().toLowerCase(); // Clean scanned code
-                            console.log('Scanned Code:', scannedCode);
-    
-                            // Display scanned QR code in the output
-                            document.getElementById('output').innerText = scannedCode;
-    
-                            // Call function to validate the scanned QR code with Adalo
-                            validateQRCode(scannedCode);
-                        }
-                    }, 500); // Scan every 500ms
+            video.addEventListener('play', () => {
+                setInterval(() => {
+                    // Capture the video frame
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+
+                    // Scan the frame for QR codes
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                    if (code) {
+                        const scannedCode = code.data.trim().toLowerCase(); // Clean scanned code
+                        console.log('Scanned Code:', scannedCode);
+
+                        // Display scanned QR code in the output
+                        document.getElementById('output').innerText = scannedCode;
+
+                        // Call function to validate the scanned QR code with Adalo
+                        validateQRCode(scannedCode);
+                    }
+                }, 500); // Scan every 500ms
+            });
+        })
+        .catch((error) => {
+            console.error('Error accessing camera:', error.message);
+            alert('Unable to access the camera. Please check your browser permissions.');
+        });
+
+    // Function to validate QR code against Adalo API
+    function validateQRCode(scannedCode) {
+        const apiUrl = 'https://api.adalo.com/v0/apps/16825882-e024-41d5-a59c-0f40ceb23252/collections/t_b50b718c642e46d1bec4470be4b47e7c';
+
+        // Fetch all Redemptions to check the unique code
+        fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer 2w63j89m68xb5jmconfrjt5jj',
+            },
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Error fetching data: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then((data) => {
+                if (!data.records || !Array.isArray(data.records)) {
+                    throw new Error("Invalid data structure received from Adalo API");
+                }
+                console.log("Adalo Data:", data.records);
+
+                // Find matching record
+                const redemption = data.records.find((record) => {
+                    const adaloCode = record["Unique Code"];
+                    if (!adaloCode) {
+                        console.warn("Missing Unique Code in record:", record);
+                        return false; // Skip this record
+                    }
+                    const cleanedAdaloCode = adaloCode.trim().toLowerCase();
+                    return scannedCode === cleanedAdaloCode;
                 });
+
+                if (redemption) {
+                    console.log("Matching Record Found:", redemption);
+                    updateQRCodeStatus(redemption.id, true);
+                } else {
+                    console.log("No matching code found");
+                }
             })
             .catch((error) => {
-                console.error('Error accessing camera:', error.message);
-                alert('Unable to access the camera. Please check your browser permissions.');
+                console.error('Error fetching data:', error.message);
             });
-    
-        // Function to validate QR code against Adalo API
-        function validateQRCode(scannedCode) {
-            const apiUrl = 'https://api.adalo.com/v0/apps/16825882-e024-41d5-a59c-0f40ceb23252/collections/t_b50b718c642e46d1bec4470be4b47e7c';
-    
-            // Fetch all Redemptions to check the unique code
-            fetch(apiUrl, {
-                method: 'GET',
-                headers: {
-                    'Authorization': 'Bearer 2w63j89m68xb5jmconfrjt5jj',
-                },
-            })
-                .then((response) => {
-                    if (!response.ok) {
-                        throw new Error(`Error fetching data: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then((data) => {
-                    if (!data.records || !Array.isArray(data.records)) {
-                        throw new Error("Invalid data structure received from Adalo API");
-                    }
-                    console.log("Adalo Data:", data.records);
-    
-                    // Find matching record
-                    const redemption = data.records.find((record) => {
-                        const adaloCode = record["Unique Code"];
-                        if (!adaloCode) {
-                            console.warn("Missing Unique Code in record:", record);
-                            return false; // Skip this record
-                        }
-                        const cleanedAdaloCode = adaloCode.trim().toLowerCase();
-                        return scannedCode === cleanedAdaloCode;
-                    });
-    
-                    if (redemption) {
-                        console.log("Matching Record Found:", redemption);
-                        updateQRCodeStatus(redemption.id, true);
-                    } else {
-                        console.log("No matching code found");
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error fetching data:', error.message);
-                });
+    }
+
+    // Function to update the QR code status, QR Admin, and QR as Text
+    function updateQRCodeStatus(recordId, status) {
+        if (!recordId) {
+            console.error('Invalid record ID. Cannot update QR code status.');
+            return;
         }
-    
-        // Function to update the QR code status and QR Admin
-        function updateQRCodeStatus(recordId, status) {
-            if (!recordId) {
-                console.error('Invalid record ID. Cannot update QR code status.');
-                return;
-            }
-    
-            console.log("Attempting to update record with ID:", recordId);
-    
-            const apiUrl = `https://api.adalo.com/v0/apps/16825882-e024-41d5-a59c-0f40ceb23252/collections/t_b50b718c642e46d1bec4470be4b47e7c/${recordId}`;
-    
-            fetch(apiUrl, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': 'Bearer 2w63j89m68xb5jmconfrjt5jj',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    "QR Stopped": Boolean(status), // Explicitly cast status as boolean
-                    "QR Admin": Boolean(status)    // Also set QR Admin to true
-                }),
+
+        console.log("Attempting to update record with ID:", recordId);
+
+        const apiUrl = `https://api.adalo.com/v0/apps/16825882-e024-41d5-a59c-0f40ceb23252/collections/t_b50b718c642e46d1bec4470be4b47e7c/${recordId}`;
+
+        fetch(apiUrl, {
+            method: 'PUT',
+            headers: {
+                'Authorization': 'Bearer 2w63j89m68xb5jmconfrjt5jj',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                "QR Stopped": Boolean(status), // Explicitly cast status as boolean
+                "QR Admin": Boolean(status),    // Also set QR Admin to true
+                "QR": "true"                    // Set QR property as text "true"
+            }),
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Error updating data: ${response.status}`);
+                }
+                return response.json();
             })
-                .then((response) => {
-                    if (!response.ok) {
-                        throw new Error(`Error updating data: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then((data) => {
-                    console.log('QR Code Status and Admin Updated:', data);
-    
-                    // Navigate to another screen after update
-                    //setTimeout(() => {
-                   //     location.reload();  // This will refresh the current page
-                 //       navigateToNextScreen();  // Navigate to the next screen after refresh
-               //     }, 5000); // Wait for 5 seconds before refreshing
-                })
-                .catch((error) => {
-                    console.error('Error updating QR code status:', error.message);
-                });
-        }
-    
-        // Function to trigger navigation after the refresh
-       // function navigateToNextScreen() {
-            // Trigger navigation to the next screen
-            // Replace this URL with the correct screen navigation link
-         //   window.location.href = "adalo://screen/Admin-Dashboard"; // Example of navigation
-        //}
-    </script>
-    
-    
-    
-    
-    
-    
-    <video id="video" autoplay></video>
-    <div id="output"></div>
-    
-    
-</body>
-</html>
+            .then((data) => {
+                console.log('QR Code Status, Admin, and QR Updated:', data);
+
+               /* // Navigate to another screen after update
+                setTimeout(() => {
+                    location.reload();  // This will refresh the current page
+                    navigateToNextScreen();  // Navigate to the next screen after refresh
+                }, 5000); // Wait for 5 seconds before refreshing
+            })*/})
+            .catch((error) => {
+                console.error('Error updating QR code status:', error.message);
+            });
+    }
+
+    // Function to trigger navigation after the refresh
+    function navigateToNextScreen() {
+        // Trigger navigation to the next screen
+        // Replace this URL with the correct screen navigation link
+        window.location.href = "adalo://screen/AdminDashboard"; // Example of navigation
+    }
+</script>
