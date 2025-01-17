@@ -128,10 +128,7 @@
             console.log('QR Code Status, Admin, and QR Updated:', data);
 
             // Navigate to another screen after update
-            setTimeout(() => {
-                console.log('Refreshing the screen and navigating...');
-                navigateToNextScreen();  // Navigate to the next screen
-            }, 5000); // Wait for 5 seconds before navigation
+            
         })
         .catch((error) => {
             console.error('Error updating QR code status:', error.message);
