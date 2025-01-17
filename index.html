@@ -51,13 +51,13 @@
     
         // Function to validate QR code against Adalo API
         function validateQRCode(scannedCode) {
-            const apiUrl = 'https://api.adalo.com/v0/apps/43d1d797-8556-45d9-9cc4-a964777c052c/collections/t_0gp13b7mlbmxvftnqazbxqjl3';
+            const apiUrl = 'https://api.adalo.com/v0/apps/16825882-e024-41d5-a59c-0f40ceb23252/collections/t_b50b718c642e46d1bec4470be4b47e7c';
     
             // Fetch all Redemptions to check the unique code
             fetch(apiUrl, {
                 method: 'GET',
                 headers: {
-                    'Authorization': 'Bearer 15wf61bh2xgzpd16c2wy2srm4',
+                    'Authorization': 'Bearer 2w63j89m68xb5jmconfrjt5jj',
                 },
             })
                 .then((response) => {
@@ -104,12 +104,12 @@
     
             console.log("Attempting to update record with ID:", recordId); // Debugging record ID
     
-            const apiUrl = `https://api.adalo.com/v0/apps/43d1d797-8556-45d9-9cc4-a964777c052c/collections/t_0gp13b7mlbmxvftnqazbxqjl3/${recordId}`;
+            const apiUrl = `https://api.adalo.com/v0/apps/16825882-e024-41d5-a59c-0f40ceb23252/collections/t_b50b718c642e46d1bec4470be4b47e7c/${recordId}`;
     
             fetch(apiUrl, {
                 method: 'PUT', // Changed to PATCH for partial updates
                 headers: {
-                    'Authorization': 'Bearer 15wf61bh2xgzpd16c2wy2srm4',
+                    'Authorization': 'Bearer 2w63j89m68xb5jmconfrjt5jj',
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
