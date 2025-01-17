@@ -97,53 +97,56 @@
     
         // Function to update the QR code status, QR Admin, and QR as Text
         function updateQRCodeStatus(recordId, status) {
-            if (!recordId) {
-                console.error('Invalid record ID. Cannot update QR code status.');
-                return;
+    if (!recordId) {
+        console.error('Invalid record ID. Cannot update QR code status.');
+        return;
+    }
+
+    console.log("Attempting to update record with ID:", recordId);
+
+    const apiUrl = `https://api.adalo.com/v0/apps/16825882-e024-41d5-a59c-0f40ceb23252/collections/t_b50b718c642e46d1bec4470be4b47e7c/${recordId}`;
+
+    fetch(apiUrl, {
+        method: 'PUT',
+        headers: {
+            'Authorization': 'Bearer 2w63j89m68xb5jmconfrjt5jj',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            "QR Stopped": Boolean(status), // Explicitly cast status as boolean
+            "QR Admin": Boolean(status),    // Also set QR Admin to true
+            "QR": "true"                    // Set QR property as text "true"
+        }),
+    })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`Error updating data: ${response.status}`);
             }
-    
-            console.log("Attempting to update record with ID:", recordId);
-    
-            const apiUrl = `https://api.adalo.com/v0/apps/16825882-e024-41d5-a59c-0f40ceb23252/collections/t_b50b718c642e46d1bec4470be4b47e7c/${recordId}`;
-    
-            fetch(apiUrl, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': 'Bearer 2w63j89m68xb5jmconfrjt5jj',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    "QR Stopped": Boolean(status), // Explicitly cast status as boolean
-                    "QR Admin": Boolean(status),    // Also set QR Admin to true
-                    "QR": "true"                    // Set QR property as text "true"
-                }),
-            })
-                .then((response) => {
-                    if (!response.ok) {
-                        throw new Error(`Error updating data: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then((data) => {
-                    console.log('QR Code Status, Admin, and QR Updated:', data);
-    
-                    // Navigate to another screen after update
-                   /* setTimeout(() => {
-                        location.reload();  // This will refresh the current page
-                        navigateToNextScreen();  // Navigate to the next screen after refresh
-                    }, 5000); // Wait for 5 seconds before refreshing
-                })
-                .catch((error) => {
-                    console.error('Error updating QR code status:', error.message);*/
-                });
-        }
-    
-        // Function to trigger navigation after the refresh
-        function navigateToNextScreen() {
-            // Trigger navigation to the next screen
-            // Replace this URL with the correct screen navigation link
-            window.location.href = "adalo://screen/AdminDashboard"; // Example of navigation
-        }
+            return response.json();
+        })
+        .then((data) => {
+            console.log('QR Code Status, Admin, and QR Updated:', data);
+
+            // Navigate to another screen after update
+            setTimeout(() => {
+                console.log('Refreshing the screen and navigating...');
+                navigateToNextScreen();  // Navigate to the next screen
+            }, 5000); // Wait for 5 seconds before navigation
+        })
+        .catch((error) => {
+            console.error('Error updating QR code status:', error.message);
+        });
+}
+
+function navigateToNextScreen() {
+    try {
+        console.log('Executing navigation function...');
+        window.location.href = "https://screen/AdminDashboard"; // Example of navigation
+    } catch (error) {
+        console.error('Error navigating to the next screen:', error.message);
+    }
+}
+
     </script>
     
     
