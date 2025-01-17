@@ -85,7 +85,7 @@
     
                     if (redemption) {
                         console.log("Matching Record Found:", redemption);
-                        updateQRCodeStatus(redemption.id, true) ;
+                        updateQRCodeStatus(redemption.id, true);
                     } else {
                         console.log("No matching code found");
                     }
@@ -95,19 +95,19 @@
                 });
         }
     
-        // Function to update the QR code status (treated as boolean)
+        // Function to update the QR code status
         function updateQRCodeStatus(recordId, status) {
             if (!recordId) {
                 console.error('Invalid record ID. Cannot update QR code status.');
                 return;
             }
     
-            console.log("Attempting to update record with ID:", recordId); // Debugging record ID
+            console.log("Attempting to update record with ID:", recordId);
     
             const apiUrl = `https://api.adalo.com/v0/apps/16825882-e024-41d5-a59c-0f40ceb23252/collections/t_b50b718c642e46d1bec4470be4b47e7c/${recordId}`;
     
             fetch(apiUrl, {
-                method: 'PUT', // Changed to PATCH for partial updates
+                method: 'PUT',
                 headers: {
                     'Authorization': 'Bearer 2w63j89m68xb5jmconfrjt5jj',
                     'Content-Type': 'application/json',
@@ -117,7 +117,6 @@
                 }),
             })
                 .then((response) => {
-                    
                     if (!response.ok) {
                         throw new Error(`Error updating data: ${response.status}`);
                     }
@@ -125,16 +124,24 @@
                 })
                 .then((data) => {
                     console.log('QR Code Status Updated:', data);
+    
+                    // Navigate to another screen after update
+                    navigateAfterQRUpdate();
                 })
-                // Refresh the screen after 5 seconds
-                
-                
                 .catch((error) => {
                     console.error('Error updating QR code status:', error.message);
                 });
-                
-        }  
+        }
+    
+        // Function to navigate to another screen after 5 seconds
+        function navigateAfterQRUpdate() {
+            setTimeout(() => {
+                console.log("Navigating to another screen...");
+                window.location.href = "adalo://screen/Admin-Dashboard"; // Replace with the actual Adalo screen link
+            }, 5000); // Wait 5 seconds before redirecting
+        }
     </script>
+    
     
     
     
