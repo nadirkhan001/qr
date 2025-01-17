@@ -126,7 +126,10 @@
                     console.log('QR Code Status Updated:', data);
     
                     // Navigate to another screen after update
-                    navigateAfterQRUpdate();
+                    setTimeout(() => {
+                    location.reload();  // This will refresh the current page
+                    navigateToNextScreen();  // Navigate to the next screen after refresh
+                }, 5000);
                 })
                 .catch((error) => {
                     console.error('Error updating QR code status:', error.message);
@@ -134,12 +137,7 @@
         }
     
         // Function to navigate to another screen after 5 seconds
-        function navigateAfterQRUpdate() {
-            setTimeout(() => {
-                console.log("Navigating to another screen...");
-                window.location.href = "adalo://screen/Admin-Dashboard"; // Replace with the actual Adalo screen link
-            }, 5000); // Wait 5 seconds before redirecting
-        }
+        
     </script>
     
     
