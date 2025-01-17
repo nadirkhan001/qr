@@ -127,10 +127,7 @@
                     console.log('QR Code Status Updated:', data);
                 })
                 // Refresh the screen after 5 seconds
-                setTimeout(() => {
-                    window.location.reload();
-                }, 5000);
-            })
+                
                 
                 .catch((error) => {
                     console.error('Error updating QR code status:', error.message);
